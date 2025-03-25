@@ -1,0 +1,30 @@
+{
+  "name": "pdf-viewer",
+  "version": "1.0.0",
+  "description": "基于PDF.js的PDF文件预览工具，使用Ant Design风格",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html --public-url ./ --no-minify",
+    "serve": "serve -s dist",
+    "clean": "rimraf dist .cache",
+    "package": "npm run build && cd dist && zip -r ../pdf-viewer-v1.0.0.zip *"
+  },
+  "keywords": [
+    "pdf",
+    "viewer",
+    "pdf.js",
+    "antd"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ant-design/icons": "^5.2.6",
+    "pdfjs-dist": "3.11.174"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.5",
+    "rimraf": "^3.0.2",
+    "serve": "^14.2.1"
+  }
+}

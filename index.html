@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF预览器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/5.12.2/reset.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --error-color: #f5222d;
+            --font-size-base: 14px;
+            --border-radius-base: 2px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: rgba(0, 0, 0, 0.85);
+        }
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            background-color: #fff;
+            padding: 16px 24px;
+            box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 24px;
+            border-radius: 2px;
+        }
+
+        .title {
+            font-size: 20px;
+            color: rgba(0, 0, 0, 0.85);
+            font-weight: 500;
+            margin: 0;
+            margin-bottom: 16px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .btn-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 20px;
+            background-color: #fff;
+            padding: 16px;
+            border-radius: 2px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .btn {
+            padding: 4px 15px;
+            border: 1px solid #d9d9d9;
+            border-radius: var(--border-radius-base);
+            background-color: #fff;
+            color: rgba(0, 0, 0, 0.85);
+            font-size: var(--font-size-base);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn:active {
+            color: #096dd9;
+            border-color: #096dd9;
+        }
+
+        .btn::after {
+            content: '';
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .3s, opacity .5s;
+        }
+
+        .btn:active::after {
+            transform: scale(0, 0);
+            opacity: .3;
+            transition: 0s;
+        }
+
+        .btn-primary {
+            color: #fff;
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #40a9ff;
+            border-color: #40a9ff;
+            color: #fff;
+        }
+        
+        .btn-primary:active {
+            background-color: #096dd9;
+            border-color: #096dd9;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+        }
+
+        .page-info {
+            margin: 0 16px;
+            white-space: nowrap;
+        }
+
+        .input-number {
+            width: 70px;
+            height: 32px;
+            padding: 4px 11px;
+            border: 1px solid #d9d9d9;
+            border-radius: var(--border-radius-base);
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .input-number:hover {
+            border-color: var(--primary-color);
+        }
+
+        .input-number:focus {
+            border-color: #40a9ff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .zoom-control {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+        .pdf-container {
+            background-color: #f5f5f5;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            border-radius: 2px;
+            overflow: auto;
+            height: calc(100vh - 200px);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            position: relative;
+        }
+
+        .drop-zone {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            height: 300px;
+            border: 2px dashed #d9d9d9;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(250, 250, 250, 0.8);
+            transition: all 0.3s ease;
+            z-index: 2;
+            cursor: pointer;
+            user-select: none;
+            pointer-events: auto;
+            will-change: transform, border-color, background-color;
+            box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+        }
+        
+        .drop-zone:hover {
+            border-color: #40a9ff;
+            background-color: rgba(240, 245, 255, 0.8);
+        }
+        
+        .drop-zone.active {
+            border-color: var(--success-color);
+            background-color: rgba(245, 255, 240, 0.8);
+            box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.1);
+        }
+        
+        .drop-zone.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(230, 247, 255, 0.8);
+            border-width: 3px;
+            box-shadow: 0 0 10px rgba(24, 144, 255, 0.3);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .drop-zone.drag-over {
+            animation: none;
+        }
+        
+        .pdf-container.has-pdf .drop-zone {
+            display: none;
+        }
+        
+        .drop-zone-prompt {
+            margin-top: 80px;
+            font-size: 18px;
+            color: #8c8c8c;
+            text-align: center;
+        }
+
+        .drop-zone-icon {
+            width: 80px;
+            height: 80px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath fill='%23d9d9d9' d='M369.9 97.9L286 14C277 5 264.8-.1 252.1-.1H48C21.5 0 0 21.5 0 48v416c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V131.9c0-12.7-5.1-25-14.1-34zM332.1 128H256V51.9l76.1 76.1zM48 464V48h160v104c0 13.3 10.7 24 24 24h104v288H48zm250.2-143.7c-12.2-12-47-8.7-64.4-6.5-17.2-10.5-28.7-25-36.8-46.3 3.9-16.1 10.1-40.6 5.4-56-4.2-26.2-37.8-23.6-42.6-5.9-4.4 16.1-.4 38.5 7 67.1-10 23.9-24.9 56-35.4 74.4-20 10.3-47 26.2-51 46.2-3.3 15.8 26 55.2 76.1-31.2 22.4-7.4 46.8-16.5 68.4-20.1 18.9 10.2 41 17 55.8 17 25.5 0 28-28.2 17.5-38.7zm-198.1 77.8c5.1-13.7 24.5-29.5 30.4-35-19 30.3-30.4 35.7-30.4 35zm81.6-190.6c7.4 0 6.7 32.1 1.8 40.8-4.4-13.9-4.3-40.8-1.8-40.8zm-24.4 136.6c9.7-16.9 18-37 24.7-54.7 8.3 15.1 18.9 27.2 30.1 35.5-20.8 4.3-38.9 13.1-54.8 19.2zm131.6-5s-5 6-37.3-7.8c35.1-2.6 40.9 5.4 37.3 7.8z'%3E%3C/path%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin-bottom: 20px;
+        }
+        
+        .pdf-container::before,
+        .pdf-container::after {
+            display: none;
+        }
+
+        .drop-zone-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .drop-zone-hint p {
+            font-size: 16px;
+            color: #595959;
+            margin-top: 15px;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 0 auto;
+            min-height: 400px;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        #pdf-viewer {
+            display: none;
+            z-index: 1;
+        }
+
+        #pdf-viewer.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .text-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .file-selector {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-selector input[type="file"] {
+            position: absolute;
+            top: 0;
+            right: 0;
+            min-width: 100%;
+            min-height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -20px;
+            margin-left: -20px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Message styles */
+        .message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 16px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            max-width: 80%;
+            box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08);
+        }
+        
+        .message.show {
+            opacity: 1;
+        }
+        
+        .message-info {
+            background: rgba(0, 0, 0, 0.75);
+        }
+        
+        .message-success {
+            background: rgba(82, 196, 26, 0.85);
+        }
+        
+        .message-error {
+            background: rgba(255, 77, 79, 0.85);
+        }
+
+        .anticon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: inherit;
+        }
+
+        .anticon svg {
+            display: inline-block;
+            line-height: 0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+            
+            .search-bar {
+                flex-basis: 100%;
+                margin-top: 10px;
+                justify-content: flex-start;
+            }
+            
+            .pdf-container {
+                padding: 10px;
+                align-items: flex-start;
+            }
+            
+            .top-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .pdf-filename {
+                margin: 8px 0;
+                text-align: center;
+            }
+            
+            .page-controls, .zoom-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .page-input {
+                width: 40px;
+            }
+            
+            .file-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .pdf-filename {
+                margin: 10px 0;
+                padding: 0;
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .input-number {
+                width: 50px;
+            }
+            
+            .page-info {
+                margin: 0 8px;
+            }
+            
+            .btn {
+                padding: 4px 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .search-bar input {
+                width: 140px;
+            }
+            
+            .btn {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+        }
+        
+        /* 打印样式 */
+        @media print {
+            .header, .controls, .message {
+                display: none;
+            }
+            
+            .container {
+                padding: 0;
+                max-width: 100%;
+            }
+            
+            .pdf-container {
+                height: auto;
+                overflow: visible;
+                box-shadow: none;
+                padding: 0;
+            }
+            
+            #pdf-viewer {
+                box-shadow: none;
+            }
+        }
+
+        /* 添加CSS动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            60% { transform: translateY(-10px); }
+        }
+        
+        #pdf-viewer.active {
+            position: relative;
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* 确保PDF容器在缩放时正确对齐 */
+        .pdf-container.has-pdf {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        /* 更新文本匹配高亮样式 */
+        .text-match {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.4);
+            border-radius: 2px;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+            box-sizing: border-box;
+        }
+        
+        .text-match.active {
+            background-color: rgba(255, 165, 0, 0.7);
+            box-shadow: 0 0 5px 2px rgba(255, 165, 0, 0.3);
+        }
+
+        /* 在有PDF时隐藏拖放区域 */
+        .pdf-container.has-pdf .drop-zone {
+            display: none;
+        }
+        
+        /* 确保spinner正确居中 */
+        #spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        /* 文件名显示样式 */
+        .pdf-filename {
+            flex: 1;
+            margin: 0 15px;
+            font-size: 16px;
+            color: #333;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 0 8px;
+        }
+        
+        /* 搜索栏样式 */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        
+        .search-bar input {
+            height: 32px;
+            padding: 5px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 180px;
+        }
+        
+        .search-bar input:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .search-bar button {
+            margin-left: 5px;
+            padding: 4px 8px;
+            font-size: 12px;
+            min-width: 32px;
+        }
+        
+        .search-results {
+            margin-left: 8px;
+            font-size: 12px;
+            color: #666;
+            min-width: 40px;
+        }
+        
+        .top-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 0 10px;
+        }
+        
+        .search-bar {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        
+        .search-bar input {
+            height: 32px;
+            padding: 5px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 180px;
+        }
+        
+        .search-bar input:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .search-bar button {
+            margin-left: 5px;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        
+        .search-results {
+            margin-left: 8px;
+            font-size: 12px;
+            color: #666;
+            min-width: 40px;
+        }
+        
+        .text-match {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.4);
+            border-radius: 2px;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+        
+        .text-match.active {
+            background-color: rgba(255, 165, 0, 0.7);
+            box-shadow: 0 0 5px 2px rgba(255, 165, 0, 0.3);
+        }
+
+        /* 增大拖放区域图标 */
+        .drop-zone .fa-file-pdf {
+            font-size: 64px;
+            color: #1890ff;
+            margin-bottom: 20px;
+        }
+
+        /* 确保PDF容器相对定位以便文本层定位正确 */
+        #pdf-container {
+            position: relative;
+        }
+        
+        #pdf-viewer, #text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+        }
+        
+        #pdf-viewer.active {
+            position: relative;
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* 添加新的平滑过渡动画 */
+        @keyframes gentle-pulsate {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.3);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.02);
+                box-shadow: 0 0 10px 0 rgba(24, 144, 255, 0.5);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.3);
+            }
+        }
+        
+        .drop-zone.drag-over {
+            animation: gentle-pulsate 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 消息通知组件 -->
+        <div id="message" class="message">
+            <div class="message-content"></div>
+        </div>
+        
+        <div class="header">
+            <h1 class="title">PDF预览器 v1.0.0</h1>
+            <div class="file-info">
+                <div class="btn-group">
+                    <button id="select-file-btn" class="btn btn-primary">选择PDF文件</button>
+                    <input type="file" id="file-input" accept="application/pdf" style="display: none;">
+                </div>
+                <div class="pdf-filename" id="pdf-filename">未选择文件</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="prev-page" title="上一页 (左方向键)">
+                <span class="anticon"><svg viewBox="64 64 896 896" focusable="false" data-icon="left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M724 218.3V141c0-6.7-7.7-10.4-12.9-6.3L260.3 486.8a31.86 31.86 0 000 50.3l450.8 352.1c5.3 4.1 12.9.4 12.9-6.3v-77.3c0-4.9-2.3-9.6-6.1-12.6l-360-281 360-281.1c3.8-3 6.1-7.7 6.1-12.6z"></path></svg></span> 上一页
+            </button>
+            <div class="input-group">
+                <input type="number" class="input-number" id="current-page" value="1" min="1" title="输入页码并按回车跳转" />
+                <span class="page-info">/ <span id="page-count">0</span></span>
+            </div>
+            <button class="btn" id="next-page" title="下一页 (右方向键)">
+                下一页 <span class="anticon"><svg viewBox="64 64 896 896" focusable="false" data-icon="right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M765.7 486.8L314.9 134.7A7.97 7.97 0 00302 141v77.3c0 4.9 2.3 9.6 6.1 12.6l360 281.1-360 281.1c-3.9 3-6.1 7.7-6.1 12.6V883c0 6.7 7.7 10.4 12.9 6.3l450.8-352.1a31.96 31.96 0 000-50.4z"></path></svg></span>
+            </button>
+            <div class="zoom-control">
+                <button class="btn" id="zoom-out" title="缩小 (-键)">
+                    <span class="anticon"><svg viewBox="64 64 896 896" focusable="false" data-icon="minus" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M872 474H152c-4.4 0-8 3.6-8 8v60c0 4.4 3.6 8 8 8h720c4.4 0 8-3.6 8-8v-60c0-4.4-3.6-8-8-8z"></path></svg></span>
+                </button>
+                <span class="page-info"><span id="zoom-level">100</span>%</span>
+                <button class="btn" id="zoom-in" title="放大 (+键)">
+                    <span class="anticon"><svg viewBox="64 64 896 896" focusable="false" data-icon="plus" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M482 152h60q8 0 8 8v704q0 8-8 8h-60q-8 0-8-8V160q0-8 8-8z"></path><path d="M176 474h672q8 0 8 8v60q0 8-8 8H176q-8 0-8-8v-60q0-8 8-8z"></path></svg></span>
+                </button>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="搜索文本" title="按Ctrl+F聚焦 (最少2个字符)" />
+                <button id="search-prev" class="btn" title="上一个匹配 (Shift+F3)"><i class="fas fa-chevron-up"></i></button>
+                <button id="search-next" class="btn" title="下一个匹配 (F3)"><i class="fas fa-chevron-down"></i></button>
+                <button id="search-clear" class="btn" title="清除搜索"><i class="fas fa-times"></i></button>
+                <span id="search-results" class="search-results"></span>
+            </div>
+        </div>
+        
+        <div id="pdf-container" class="pdf-container">
+            <div id="spinner" class="spinner">
+                <div class="double-bounce1"></div>
+                <div class="double-bounce2"></div>
+            </div>
+            <div class="canvas-container">
+                <canvas id="pdf-viewer"></canvas>
+                <div id="text-layer" class="text-layer"></div>
+            </div>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-hint">
+                    <i class="fas fa-file-pdf"></i>
+                    <p>拖放PDF文件到此处，或点击选择文件</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用本地PDF.js库 -->
+    <script src="./index.js"></script>
+</body>
+</html> 
